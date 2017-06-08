@@ -5,7 +5,6 @@ const path = require('path');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const WebpackNotifierPlugin = require('webpack-notifier');
 const autoprefixer = require('autoprefixer');
-const NpmImportPlugin = require('less-plugin-npm-import');
 const banner = require('./dev/banner');
 const CommonsChunkPlugin = require('webpack/lib/optimize/CommonsChunkPlugin');
 
@@ -40,10 +39,6 @@ const config = {
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
-
-  // debug: true,
-  // cache: true,
-  // watch: true,
 
   stats: {
     colors: true,
@@ -93,11 +88,7 @@ const config = {
               }
             },
             {
-              loader: 'less-loader',
-              options: {
-                strictMath: true,
-                noIeCompat: true
-              }
+              loader: 'less-loader'
             }
           ],
           publicPath: '../'
@@ -123,18 +114,6 @@ const config = {
       }
     ]
   },
-
-  // postcss() {
-  //   return [autoprefixer({browsers: ['last 2 versions', 'ie 9-11']})];
-  // },
-
-  // lessLoader: {
-  //   lessPlugins: [
-  //     new NpmImportPlugin({
-  //       prefix: '~'
-  //     })
-  //   ]
-  // },
 
   plugins: [
 

@@ -1,6 +1,7 @@
 'use strict';
 
 const webpack = require('webpack');
+const path = require('path');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const autoprefixer = require('autoprefixer');
 const NpmImportPlugin = require('less-plugin-npm-import');
@@ -12,7 +13,7 @@ function getConfig(options) {
 
   const optimize = options.optimize || false;
   const minimize = optimize ? 'minimize' : '-minimize';
-  const cssQuery = `css?limit=32768?sourceMap&${minimize}&name=images/[name].[ext]!postcss!less`;
+  const cssQuery = `css-loader?limit=32768?sourceMap&${minimize}&name=images/[name].[ext]`;
 
   const ENV_VAR = {
     'process.env': {
@@ -30,7 +31,7 @@ function getConfig(options) {
     },
 
     output: {
-      path: 'dist',
+      path: path.join(__dirname, 'dist'),
       filename: optimize ? 'js/[name].min.js' : 'js/[name].js',
       library: 'availity-uikit',
       libraryTarget: 'umd',
@@ -42,10 +43,6 @@ function getConfig(options) {
     },
 
     devtool: 'source-map',
-
-    debug: false,
-    cache: false,
-    watch: false,
 
     stats: {
       colors: true,
@@ -60,26 +57,49 @@ function getConfig(options) {
     },
 
     module: {
-      loaders: [
+      rules: [
 
         {
           test: /\.js$/,
-          loader: 'babel',
+          use: 'babel-loader',
           exclude: /(bower_components|node_modules)/
         },
         {
           test: /\.css$/,
-          loader: ExtractTextPlugin.extract('style', 'css')
+          use: ExtractTextPlugin.extract({
+            fallback: 'style-loader',
+            user: 'css-loader'
+          })
         },
         {
           test: /\.less$/,
-          loader: ExtractTextPlugin.extract(
-            'style',
-            cssQuery,
-            {
-              publicPath: '../'
-            }
-          )
+          use: ExtractTextPlugin.extract({
+            fallback: 'style-loader',
+            use: [
+              cssQuery,
+              {
+                loader: 'postcss-loader',
+                options: {
+                  sourceMap: true,
+                  plugins: [
+                    autoprefixer(
+                      {
+                        browsers: [
+                          'last 5 versions',
+                          'Firefox ESR',
+                          'not ie < 9'
+                        ]
+                      }
+                    )
+                  ]
+                }
+              },
+              {
+                loader: 'less-loader'
+              }
+            ],
+            publicPath: '../'
+          })
         },
         {
           // test should match the following:
@@ -88,15 +108,15 @@ function getConfig(options) {
           //  '../fonts/availity-font.eot'
           //
           test: /\.(ttf|woff|eot|svg).*/,
-          loader: 'file?name=fonts/[name].[ext]'
+          use: 'file-loader?name=fonts/[name].[ext]'
         },
         {
           test: /\.scss$/,
-          loaders: ['style', 'css', 'sass']
+          use: ['style-loader', 'css', 'sass']
         },
         {
           test: /\.(jpe?g|png|gif)$/,
-          loader: 'url?limit=32768?name=images/[name].[ext]'
+          use: 'url-loader?limit=32768?name=images/[name].[ext]'
         }
       ]
     },
@@ -115,11 +135,12 @@ function getConfig(options) {
 
     plugins: [
 
-      new webpack.BannerPlugin(banner()),
+      new webpack.BannerPlugin({banner: banner()}),
 
       new webpack.optimize.OccurenceOrderPlugin(true),
 
-      new ExtractTextPlugin(optimize ? 'css/[name].min.css' : 'css/[name].css', {
+      new ExtractTextPlugin({
+        filename: optimize ? 'css/[name].min.css' : 'css/[name].css',
         disable: false,
         allChunks: true
       }),
@@ -130,7 +151,7 @@ function getConfig(options) {
 
     ],
     resolve: {
-      extensions: ['', '.js']
+      extensions: ['.js']
     }
   };
 
@@ -154,5 +175,3 @@ function getConfig(options) {
 }
 
 module.exports = getConfig;
-
-
