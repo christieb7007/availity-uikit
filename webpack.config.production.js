@@ -4,7 +4,6 @@ const webpack = require('webpack');
 const path = require('path');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const autoprefixer = require('autoprefixer');
-const NpmImportPlugin = require('less-plugin-npm-import');
 
 const banner = require('./dev/banner');
 const VERSION = require('./package.json').version;
@@ -23,15 +22,20 @@ function getConfig(options) {
   };
 
   const config = {
-
     context: __dirname,
 
     entry: {
       'availity-uikit': './js/index.js'
     },
 
+    resolve: {
+      extensions: ['.js']
+    },
+
+    devtool: 'source-map',
+
     output: {
-      path: path.join(__dirname, 'dist'),
+      path: path.join(__dirname, './dist'),
       filename: optimize ? 'js/[name].min.js' : 'js/[name].js',
       library: 'availity-uikit',
       libraryTarget: 'umd',
@@ -41,8 +45,6 @@ function getConfig(options) {
     externals: {
       'jquery': 'jQuery'
     },
-
-    devtool: 'source-map',
 
     stats: {
       colors: true,
@@ -58,7 +60,6 @@ function getConfig(options) {
 
     module: {
       rules: [
-
         {
           test: /\.js$/,
           use: 'babel-loader',
@@ -112,7 +113,7 @@ function getConfig(options) {
         },
         {
           test: /\.scss$/,
-          use: ['style-loader', 'css', 'sass']
+          use: ['style-loader', 'css-loader', 'sass-loader']
         },
         {
           test: /\.(jpe?g|png|gif)$/,
@@ -121,38 +122,19 @@ function getConfig(options) {
       ]
     },
 
-    postcss() {
-      return [autoprefixer({browsers: ['last 2 versions', 'ie 9-11']})];
-    },
-
-    lessLoader: {
-      lessPlugins: [
-        new NpmImportPlugin({
-          prefix: '~'
-        })
-      ]
-    },
-
     plugins: [
-
-      new webpack.BannerPlugin({banner: banner()}),
-
-      new webpack.optimize.OccurenceOrderPlugin(true),
-
+      new webpack.BannerPlugin({
+        banner: banner(),
+        exclude: ['vendor']
+      }),
+      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
       new ExtractTextPlugin({
-        filename: optimize ? 'css/[name].min.css' : 'css/[name].css',
-        disable: false,
-        allChunks: true
+        filename: 'css/[name].css'
       }),
 
       new webpack.NoErrorsPlugin(),
-
       new webpack.DefinePlugin(ENV_VAR)
-
-    ],
-    resolve: {
-      extensions: ['.js']
-    }
+    ]
   };
 
   if (optimize) {

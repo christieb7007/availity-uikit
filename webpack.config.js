@@ -18,13 +18,15 @@ const ENV_VAR = {
 };
 
 const config = {
-
   context: __dirname,
-
   entry: {
     'availity-uikit': './js/index.js',
     'vendor': './docs/js/vendor',
     'docs': './docs/js'
+  },
+
+  resolve: {
+    extensions: ['.js']
   },
 
   devtool: 'cheap-module-eval-source-map',
@@ -33,7 +35,6 @@ const config = {
     // if path is not set to '/build' => Error invalid argument in MemoryFileSystem.js.  Also,
     // `output.path` needs to be an absolute path or `/` else error
     path: path.join(__dirname, 'build'),
-    // publicPath: '../',
     filename: 'js/[name].js',
     library: 'availity-uikit',
     libraryTarget: 'umd',
@@ -54,7 +55,6 @@ const config = {
 
   module: {
     rules: [
-
       {
         test: /\.js$/,
         use: 'babel-loader',
@@ -62,7 +62,10 @@ const config = {
       },
       {
         test: /\.css$/,
-        use: ExtractTextPlugin.extract({fallback: 'style-loader', use: 'css-loader'})
+        use: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: 'css-loader'
+        })
       },
       {
         test: /\.less$/,
@@ -116,39 +119,26 @@ const config = {
   },
 
   plugins: [
-
     new webpack.BannerPlugin({
       banner: banner(),
       exclude: ['vendor']
     }),
-
-    // new webpack.IgnorePlugin(/^\.\/locale$/, [/moment$/]),
-
+    new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
     new ExtractTextPlugin({
-      filename: 'css/[name].css',
-      disable: false,
-      allChunks: true
+      filename: 'css/[name].css'
     }),
-
     new webpack.ProvidePlugin({
       $: 'jquery',
       jQuery: 'jquery',
       'window.jQuery': 'jquery'
     }),
-
     new WebpackNotifierPlugin({excludeWarnings: true}),
-
     new webpack.DefinePlugin(ENV_VAR),
-
     new CommonsChunkPlugin({
       name: ['vendor'],
       minChunks: Infinity
     })
-
-  ],
-  resolve: {
-    extensions: ['.js']
-  }
+  ]
 };
 
 module.exports = config;
