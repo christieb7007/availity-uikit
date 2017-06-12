@@ -1,9 +1,7 @@
-'use strict';
-
 const webpack = require('webpack');
 const ora = require('ora');
 
-const Logger = require('./logger');
+const Logger = require('availity-workflow-logger');
 const webpackConfig = require('../webpack.config.production');
 const webpackDocsConfig = require('../webpack.config.docs');
 
@@ -53,7 +51,7 @@ function bundle(options) {
       });
 
       Logger.info(statistics);
-      Logger.ok(`Finished compiling ${optimized}`);
+      Logger.success(`Finished compiling ${optimized}`);
       resolve();
 
     });

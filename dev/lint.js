@@ -1,10 +1,7 @@
-'use strict';
-
 const eslint = require('eslint');
 const globby = require('globby');
 const ora = require('ora');
-
-const Logger = require('./logger');
+const Logger = require('availity-workflow-logger');
 
 function lint() {
 
@@ -42,7 +39,7 @@ function lint() {
         Logger.failed('Failed linting');
         reject();
       } else {
-        Logger.ok('Finished linting');
+        Logger.success('Finished linting');
         resolve();
       }
 

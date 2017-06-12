@@ -1,5 +1,3 @@
-'use strict';
-
 const webpack = require('webpack');
 const path = require('path');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
@@ -32,8 +30,6 @@ function getConfig(options) {
       extensions: ['.js']
     },
 
-    devtool: 'source-map',
-
     output: {
       path: path.join(__dirname, './dist'),
       filename: optimize ? 'js/[name].min.js' : 'js/[name].js',
@@ -45,6 +41,8 @@ function getConfig(options) {
     externals: {
       'jquery': 'jQuery'
     },
+
+    devtool: 'source-map',
 
     stats: {
       colors: true,
@@ -69,7 +67,30 @@ function getConfig(options) {
           test: /\.css$/,
           use: ExtractTextPlugin.extract({
             fallback: 'style-loader',
-            user: 'css-loader'
+            use: ExtractTextPlugin.extract({
+              fallback: 'style-loader',
+              use: [
+                `css-loader?sourceMap&${minimize}?limit=32768?name=images/[name].[ext]`,
+                {
+                  loader: 'postcss-loader',
+                  options: {
+                    sourceMap: true,
+                    plugins: [
+                      autoprefixer(
+                        {
+                          browsers: [
+                            'last 5 versions',
+                            'Firefox ESR',
+                            'not ie < 9'
+                          ]
+                        }
+                    )
+                    ]
+                  }
+                }
+              ],
+              publicPath: '../'
+            })
           })
         },
         {

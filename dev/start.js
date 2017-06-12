@@ -1,74 +1,108 @@
-'use strict';
-
 const WebpackDevServer = require('webpack-dev-server');
 const webpack = require('webpack');
 const _ = require('lodash');
 const chalk = require('chalk');
+const Logger = require('availity-workflow-logger');
+const formatWebpackMessages = require('react-dev-utils/formatWebpackMessages');
 
 const metalsmith = require('./metalsmith');
-const Logger = require('./logger');
 
 const watch = require('./watch');
 const webpackConfig = require('../webpack.config');
+const ProgressPlugin = require('webpack/lib/ProgressPlugin');
 
 const PORT = 9100;
+
+const startupMessage = _.once(() => {
+  const uri = `http://localhost:${PORT}/`;
+  Logger.box(`The app is running at ${chalk.green(uri)}`);
+});
+
+function compileMessage(stats) {
+  const statistics = stats.toJson();
+  Logger.success(`${chalk.gray('Compiled')} in ${chalk.magenta(statistics.time)} ms
+`);
+  startupMessage();
+}
 
 function serv() {
 
   Logger.info('Starting development server');
 
-  return new Promise( (resolve, reject) => {
+  return new Promise((resolve, reject) => {
+
+    let previousPercent;
+
+    webpackConfig.plugins.push(new ProgressPlugin( (percentage, msg) => {
+
+      const percent = Math.round(percentage * 100);
+
+      if (previousPercent !== percent && percent % 10 === 0) {
+        Logger.info(`${chalk.dim('Webpack')} ${percent}% ${msg}`);
+        previousPercent = percent;
+      }
+
+    }));
 
     const compiler = webpack(webpackConfig);
 
-    compiler.plugin('compile', () => {
+    compiler.plugin('invalid', () => {
       Logger.info('Started compiling');
     });
 
-    const message = _.once(stats => {
+    const message = _.debounce(compileMessage, 500);
+
+    compiler.plugin('done', stats => {
 
       const hasErrors = stats.hasErrors();
       const hasWarnings = stats.hasWarnings();
 
       if (!hasErrors && !hasWarnings) {
+        message(stats);
+        resolve(true);
+      }
 
-        const statistics = stats.toString({
-          colors: true,
-          cached: true,
-          reasons: false,
-          source: false,
-          chunks: false,
-          children: false
+      // https://webpack.js.org/configuration/stats/
+      const json = stats.toJson({
+        assets: false,
+        colors: true,
+        version: false,
+        hash: false,
+        timings: false,
+        chunks: false,
+        chunkModules: false,
+        errorDetails: true
+      });
+
+      const messages = formatWebpackMessages(json);
+
+      if (hasWarnings) {
+
+        messages.warnings.forEach(error => {
+          Logger.empty();
+          Logger.simple(`${chalk.red(error)}`);
+          Logger.empty();
         });
 
-        const uri = `http://localhost:${PORT}/`;
-
-        Logger.info(statistics);
-        Logger.ok('Finished compiling');
-        Logger.log(`The app is running at ${chalk.magenta(uri)}`);
-
-        return;
-
+        Logger.failed('Compiled with warnings');
+        Logger.empty();
       }
 
       if (hasErrors) {
+
+        messages.errors.forEach(error => {
+          Logger.empty();
+          Logger.simple(`${chalk.red(error)}`);
+          Logger.empty();
+        });
+
         Logger.failed('Failed compiling');
-        Logger.info(stats.compilation.errors);
-        reject('Failed compiling');
+        Logger.empty();
+        reject(json.errors);
+        return;
       }
 
-    });
-
-    compiler.plugin('done', stats => {
-
-      // The bless-webpack-plugin listens on the "optimize-assets" and triggers an "emit" event if changes are
-      // made to any css chunks.  This makes it appear that Webpack is bundling everything twice in the logs.
-      // Removing the bless-webpack-plugin resolves the issue but then we run the risk of creating css bundles
-      // great than the IE9 limit.
-      //
-      // https://blogs.msdn.microsoft.com/ieinternals/2011/05/14/stylesheet-limits-in-internet-explorer
-      //
-      message(stats);
+      resolve();
 
     });
 
@@ -90,7 +124,7 @@ function serv() {
         reject(err);
       }
 
-      Logger.ok('Finished development server');
+      Logger.success('Finished development server');
       resolve();
     });
 
@@ -103,7 +137,7 @@ function start() {
   return metalsmith()
     .then(serv)
     .then(watch)
-    .catch( (err) => {
+    .catch((err) => {
       Logger.error(err);
     });
 }
