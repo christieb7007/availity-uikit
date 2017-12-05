@@ -20,7 +20,7 @@
     "popper.js": "^1.12.9",
     "react-html-parser": "^2.0.1",
     "slugify": "^1.2.4",
-    "webpack": "^3.0.0"
+    "webpack": "^1.13.3"
   },
   "keywords": [
     "gatsby"
